@@ -1,4 +1,4 @@
-Collocation code based on https://github.com/maziarraissi/PINNs 
+Collocation code based on an extension of Physics Informed Neural Networks ( https://github.com/maziarraissi/PINNs ). 
 
 Requires Tensorflow and pyDOE
 
@@ -9,10 +9,10 @@ If you already have an older version of Anaconda installed, it might be a good i
 
 2.	Open the Anaconda Prompt from the Start Menu on Windows or by typing `conda activate base` on Linux.
 
-3.	Create a tensorflow environment named tf. This is required in newer versions of Anaconda which come with Python 3.7 or higher as the current version of tensorflow requires Python 3.6. The command to create the environment and install tensorflow and its dependencies is:
+3.	(Optional) Create a tensorflow environment named tf. The command to create the environment and install tensorflow and its dependencies is:
 `conda create --name tf tensorflow`
 
-4.	Activate the tensorflow environment with the command:
+4.	(Optional) Activate the tensorflow environment with the command:
 `conda activate tf`
 
 5.	Install the spyder IDE and some additional packages:
@@ -21,7 +21,7 @@ conda install spyder
 conda install matplotlib
 conda install -c conda-forge pydoe
 ```
-Note: Although spyder and matplotlib are installed already in the base environment, they should be installed and run from the "tf" environment (in Python 3.6) to ensure that they work correctly with programs which use tensorflow.
+Note: Although spyder and matplotlib are installed already in the base environment, they should be installed and run from the "tf" environment to ensure that they work correctly with programs which use tensorflow.
 
 6.	Start spyder from the Anaconda prompt:
 `spyder`
