@@ -13,7 +13,7 @@ If you already have an older version of Anaconda installed, it might be a good i
 `conda create --name tf tensorflow`
 
 For Tensorflow 1.14, use the command
-`conda create --name tf tensorflow=1.15`
+`conda create --name tf tensorflow=1.14`
 
 
 4.	(Optional) Activate the tensorflow environment with the command:
