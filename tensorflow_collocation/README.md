@@ -12,8 +12,8 @@ If you already have an older version of Anaconda installed, it might be a good i
 3.	(Optional) Create a tensorflow environment named tf. The command to create the environment and install tensorflow and its dependencies is:
 `conda create --name tf tensorflow`
 
-For Tensorflow 1.14, use the command
-`conda create --name tf tensorflow=1.14`
+For Tensorflow 1.15, use the command
+`conda create --name tf tensorflow=1.15`
 
 
 4.	(Optional) Activate the tensorflow environment with the command:
