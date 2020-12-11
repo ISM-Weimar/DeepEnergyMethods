@@ -47,7 +47,7 @@ if __name__ == "__main__":
     Xint = np.concatenate((xPhys,yPhys),axis=1).astype(data_type)
     Yint = rhs_fun(Xint[:,[0]], Xint[:,[1]])
     
-    xPhysBnd, yPhysBnd = diskDomain.getUnifEdgePts(numPtsU, numPtsV, [1,1,1,1])
+    xPhysBnd, yPhysBnd, _, _ = diskDomain.getUnifEdgePts(numPtsU, numPtsV, [1,1,1,1])
     Xbnd = np.concatenate((xPhysBnd, yPhysBnd), axis=1).astype(data_type)
     Ybnd = exact_sol(Xbnd[:,[0]], Xbnd[:,[1]])
     

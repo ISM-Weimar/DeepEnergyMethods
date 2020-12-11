@@ -69,12 +69,12 @@ if __name__ == "__main__":
     Yint = np.zeros_like(xPhys).astype(data_type)
     
     #boundary conditions at x=0
-    xPhysBnd, tPhysBnd = domainGeom.getUnifEdgePts(numPtsU, numPtsV, [0,0,0,1])
+    xPhysBnd, tPhysBnd, _, _ = domainGeom.getUnifEdgePts(numPtsU, numPtsV, [0,0,0,1])
     Xbnd = np.concatenate((xPhysBnd, tPhysBnd), axis=1).astype(data_type)
     Ybnd = np.where(tPhysBnd<=1, -np.sin(np.pi*tPhysBnd), 0).astype(data_type)
     
     #initial conditions (displacement and velocity) for t=0
-    xPhysInit, tPhysInit = domainGeom.getUnifEdgePts(numPtsU, numPtsV, [1,0,0,0])
+    xPhysInit, tPhysInit, _, _ = domainGeom.getUnifEdgePts(numPtsU, numPtsV, [1,0,0,0])
     Xinit = np.concatenate((xPhysInit, tPhysInit), axis=1).astype(data_type)
     Yinit = np.zeros_like(Xinit)
     

@@ -81,3 +81,82 @@ class Disk(Geometry2D):
         geomData['knotvector_u'] = [0., 0., 0., 1., 1., 1.]
         geomData['knotvector_v'] = [0., 0., 0., 1., 1., 1.]
         super().__init__(geomData)
+
+class QuarterAnnulus(Geometry2D):
+    '''
+    Class for defining a quarater annulus domain
+    Input: radius_int - interior radius
+           radius_ext - exterior radius
+           
+    '''
+    def __init__(self, radius_int, radius_ext):
+      
+        #unweighted control points for the unit circle
+        cptsAnnulus = [[radius_int, 0., 0.], [radius_int, radius_int, 0.],
+                    [0., radius_int, 0.], [radius_ext, 0., 0.], 
+                    [radius_ext, radius_ext, 0.], [0., radius_ext, 0.]]
+        
+        
+        #weigh the control points
+        weights = [1., 1/np.sqrt(2), 1., 1, 1/np.sqrt(2), 1.]
+        for i in range(3):
+            for j in range(6):
+                #print("cptsAnnulus = ",cptsAnnulus)
+                cptsAnnulus[j][i]=cptsAnnulus[j][i]*weights[j]
+        
+        geomData = dict()
+        
+        # Set degrees
+        geomData['degree_u'] = 1
+        geomData['degree_v'] = 2
+        
+        # Set control points
+        geomData['ctrlpts_size_u'] = 2
+        geomData['ctrlpts_size_v'] = 3
+                
+        geomData['ctrlpts'] = cptsAnnulus
+        geomData['weights'] = weights
+        
+        # Set knot vectors
+        geomData['knotvector_u'] = [0., 0., 1., 1.]
+        geomData['knotvector_v'] = [0., 0., 0., 1., 1., 1.]
+        super().__init__(geomData)
+
+class PlateWHole(Geometry2D):
+    '''
+     Class for definining a plate with a hole domain in the 2nd quadrant   
+            (C^0 parametrization with repeated knot in u direction)      
+     Input: rad_int - radius of the hole
+            lenSquare - length of the modeled plate
+    '''
+    def __init__(self, radInt, lenSquare):            
+        
+        geomData = dict()
+         
+        # Set degrees
+        geomData['degree_u'] = 2
+        geomData['degree_v'] = 1
+        
+        # Set control points
+        geomData['ctrlpts_size_u'] = 5
+        geomData['ctrlpts_size_v'] = 2
+                
+        geomData['ctrlpts'] = [[-1.*radInt,0.,0.],
+           [-1.*lenSquare, 0., 0.],
+           [-0.853553390593274*radInt, 0.353553390593274*radInt, 0.],
+           [-1.*lenSquare, 0.5*lenSquare, 0.],
+           [-0.603553390593274*radInt, 0.603553390593274*radInt, 0.],
+           [-1.*lenSquare, 1.*lenSquare, 0.],
+           [-0.353553390593274*radInt, 0.853553390593274*radInt, 0.],
+           [-0.5*lenSquare, 1.*lenSquare, 0.],
+           [0, 1.*radInt, 0],
+           [0., 1.*lenSquare, 0.]] 
+        
+        geomData['weights'] = [1., 1., 0.853553390593274, 1., 0.853553390593274, 1., 
+           0.853553390593274, 1., 1., 1.]
+        
+        # Set knot vectors
+        geomData['knotvector_u'] = [0., 0., 0., 0.5, 0.5, 1., 1., 1.]
+        geomData['knotvector_v'] = [0., 0., 1., 1.]              
+
+        super().__init__(geomData)
