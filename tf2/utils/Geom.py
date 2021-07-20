@@ -64,7 +64,7 @@ class Geometry2D:
                withEdges - 1x4 array of zeros or ones specifying whether the boundary points
                            should be included. The boundary order is [bottom, right,
                            top, left] for the unit square.
-        Output: xM, yM - flattened array containing the x and y coordinates of the points
+        Output: xPhys, yPhys - flattened array containing the x and y coordinates of the points
         '''
         #generate points in the x direction on the interval [0,1]
         uEdge = np.linspace(0, 1, numPtsU)
@@ -92,6 +92,107 @@ class Geometry2D:
         yPhys = res[:, 1:2]
         
         return xPhys, yPhys
+    
+    def compNormals(self, uPts, vPts, orientPts):
+        '''
+        computes the normals of the points on the boundary
+
+        Parameters
+        ----------
+        uPts, vPts : arrays containing the u and v coordinates of the boundary points            
+        orientPts: array containing the orientation in parameter space: 1 is down (v=0), 
+                        2 is left (u=1), 3 is top (v=1), 4 is right (u=0)
+
+        Returns
+        -------
+        xyNorm : array containing the x and y components of the outer normal vectors
+
+        '''        
+        numPts = len(uPts)
+        xyNorm = np.zeros((numPts, 2))
+        for iPt in range(numPts):
+            curPtU = uPts[iPt]
+            curPtV = vPts[iPt]
+            derivMat = self.surf.derivatives(curPtU, curPtV, order=1)
+           
+            #physPtX = derivMat[0][0][0]
+            #physPtY = derivMat[0][0][1]
+
+            derivU = derivMat[1][0][0:2]
+            derivV = derivMat[0][1][0:2]
+            JacobMat = np.array([derivU,derivV])
+
+            if orientPts[iPt]==1:
+                xNorm = JacobMat[0,1]
+                yNorm = -JacobMat[0,0]
+            elif orientPts[iPt]==2:
+                xNorm = JacobMat[1,1]
+                yNorm = -JacobMat[1,0]
+            elif orientPts[iPt]==3:
+                xNorm = -JacobMat[0,1]
+                yNorm = JacobMat[0,0]
+            elif orientPts[iPt]==4:
+                xNorm = -JacobMat[1,1]
+                yNorm = JacobMat[1,0]
+            else:
+                raise Exception('Wrong orientation given')
+                
+            JacobEdge = np.sqrt(xNorm**2+yNorm**2)
+            xNorm = xNorm/JacobEdge
+            yNorm = yNorm/JacobEdge
+
+            xyNorm[iPt,0] = xNorm
+            xyNorm[iPt,1] = yNorm
+        
+        return xyNorm
+    
+    def getUnifEdgePts(self, numPtsU, numPtsV, edgeIndex):
+        '''
+        Generate uniformly spaced points on the edge boundaries
+        Input: numPtsU, numPtsV - number of points (including edges) in the u and v
+                   directions in the parameter space
+               edgeIndex - 1x4 array of zeros or ones specifying whether the boundary points
+                           should be included. The boundary order is [bottom, right,
+                           top, left] for the unit square.
+        Output: xPhys, yPhys - flattened array containing the x and y coordinates of the points
+                xNorm, yNorm - arrays containing the x and y component of the outer normal vectors
+        '''
+        #generate points in the x direction on the interval [0,1]
+        uEdge = np.linspace(0, 1, numPtsU)
+        vEdge = np.linspace(0, 1, numPtsV)
+        
+        uPts = np.zeros(0)
+        vPts = np.zeros(0)
+        orientPts = np.zeros(0)
+        
+        #remove endpoints depending on values of withEdges
+        if edgeIndex[0]==1:
+            uPts = np.concatenate((uPts, uEdge))
+            vPts = np.concatenate((vPts, np.zeros((numPtsU))))
+            orientPts = np.concatenate((orientPts, np.ones((numPtsU))))
+        if edgeIndex[1]==1:
+            uPts = np.concatenate((uPts, np.ones((numPtsV)))) 
+            vPts = np.concatenate((vPts, vEdge))
+            orientPts = np.concatenate((orientPts, 2*np.ones((numPtsV))))
+        if edgeIndex[2]==1:
+            uPts = np.concatenate((uPts, uEdge))
+            vPts = np.concatenate((vPts, np.ones((numPtsU))))
+            orientPts = np.concatenate((orientPts, 3*np.ones((numPtsU))))
+        if edgeIndex[3]==1:
+            uPts = np.concatenate((uPts, np.zeros((numPtsV))))
+            vPts = np.concatenate((vPts, vEdge))
+            orientPts = np.concatenate((orientPts, 4*np.ones((numPtsV))))
+            
+        #map points
+        res = self.mapPoints(uPts, vPts)
+
+        xyNorm = self.compNormals(uPts, vPts, orientPts)        
+        xPhys = res[:, 0:1]
+        yPhys = res[:, 1:2]
+        xNorm = xyNorm[:, 0:1]
+        yNorm = xyNorm[:, 1:2]
+        
+        return xPhys, yPhys, xNorm, yNorm
     
     def getQuadIntPts(self, numElemU, numElemV, numGauss):
         '''
@@ -343,6 +444,8 @@ class Geometry2D:
         wgtPhys = quadPts[:, 4:5]        
         
         return xPhys, yPhys, xNorm, yNorm, wgtPhys  
+    
+
     
 class Geometry3D:
     '''
