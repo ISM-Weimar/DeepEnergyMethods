@@ -5,6 +5,7 @@
 *.asv
 *.m~
 *.fig
+*.vts
 
 # Ignore file swap
 *.swp

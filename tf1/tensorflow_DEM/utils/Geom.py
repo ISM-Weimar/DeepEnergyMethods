@@ -176,8 +176,8 @@ class Geometry2D:
         patches = []
             
         #get the number of points in the u and v directions
-        numPtsU = np.int(1/self.surf.delta[0])
-        numPtsV = np.int(1/self.surf.delta[1])
+        numPtsU = np.int(1/self.surf.delta[0])-1
+        numPtsV = np.int(1/self.surf.delta[1])-1
         
         for j in range(numPtsV):
             for i in range(numPtsU):
@@ -216,8 +216,8 @@ class Geometry2D:
         #get the number of points in the u and v directions
         self.surf.delta = 0.02
         self.surf.evaluate()
-        numPtsU = np.int(1/self.surf.delta[0])
-        numPtsV = np.int(1/self.surf.delta[1])
+        numPtsU = np.int(1/self.surf.delta[0])-1
+        numPtsV = np.int(1/self.surf.delta[1])-1
         
         for j in range(numPtsV):
             for i in range(numPtsU):
