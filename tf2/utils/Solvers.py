@@ -86,9 +86,8 @@ class Poisson2D_coll(tf.keras.Model):
             self.train_op.apply_gradients(zip(g, self.trainable_variables))
             if i%self.print_epoch==0:
                 print("Epoch {} loss: {}".format(i, L))
-                
+                                
 class Poisson2D_DEM(tf.keras.Model): 
-
     def __init__(self, layers, train_op, num_epoch, print_epoch):
         super(Poisson2D_DEM, self).__init__()
         self.model_layers = layers
@@ -175,79 +174,130 @@ class Poisson2D_DEM(tf.keras.Model):
             if i%self.print_epoch==0:
                 print("Epoch {} loss: {}".format(i, L))
                 
-class Helmholtz2D_coll(tf.keras.Model): 
-    def __init__(self, layers, train_op, num_epoch, print_epoch, k):
+                
+class Helmholtz2D_coll(tf.keras.Model):
+    def __init__(self, layers, train_op, num_epoch, print_epoch, k,
+                 real_alpha, imag_alpha):
         super(Helmholtz2D_coll, self).__init__()
         self.model_layers = layers
         self.train_op = train_op
         self.num_epoch = num_epoch
         self.print_epoch = print_epoch
         self.k = k
+        self.real_alpha = real_alpha
+        self.imag_alpha = imag_alpha
             
     def call(self, X):
-        return self.u(X[:,0:1], X[:,1:2])
+        u_val, v_val = self.w(X[:,0:1], X[:,1:2])        
+        return tf.concat([u_val, v_val],1)
     
     # Running the model
     @tf.function
-    def u(self, xPhys, yPhys):
+    def w(self, xPhys, yPhys):
         X = tf.concat([xPhys, yPhys],1)
         X = 2.0*(X - self.bounds["lb"])/(self.bounds["ub"] - self.bounds["lb"]) - 1.0
         for l in self.model_layers:
             X = l(X)
-        return X
+        return X[:, 0:1], X[:, 1:2]
     
     # Return the first derivatives
     @tf.function
-    def du(self, xPhys, yPhys):        
+    def dw(self, xPhys, yPhys):        
         with tf.GradientTape(persistent=True) as tape:
             tape.watch(xPhys)
             tape.watch(yPhys)
-            u_val = self.u(xPhys, yPhys)
+            u_val, v_val = self.w(xPhys, yPhys)
         dudx_val = tape.gradient(u_val, xPhys)
         dudy_val = tape.gradient(u_val, yPhys)
+        dvdx_val = tape.gradient(v_val, xPhys)
+        dvdy_val = tape.gradient(v_val, yPhys)
         del tape
-        return dudx_val, dudy_val
+        return dudx_val, dudy_val, dvdx_val, dvdy_val
     
-    # Return the second derivative
+    # Return the second derivatives
     @tf.function
-    def d2u(self, xPhys, yPhys):
+    def d2w(self, xPhys, yPhys):
         with tf.GradientTape(persistent=True) as tape:
             tape.watch(xPhys)
             tape.watch(yPhys)
-            dudx_val, dudy_val = self.du(xPhys, yPhys)
+            dudx_val, dudy_val, dvdx_val, dvdy_val = self.dw(xPhys, yPhys)
         d2udx2_val = tape.gradient(dudx_val, xPhys)
         d2udy2_val = tape.gradient(dudy_val, yPhys)
+        d2vdx2_val = tape.gradient(dvdx_val, xPhys)
+        d2vdy2_val = tape.gradient(dvdy_val, yPhys)
         del tape        
-        return d2udx2_val, d2udy2_val
+        return d2udx2_val, d2udy2_val, d2vdx2_val, d2vdy2_val
+    
+    @tf.function
+    def get_loss(self, Xint, Yint, Xbnd_neu, Ybnd_neu, Xbnd_robin, Ybnd_robin):
+        int_loss, neu_bnd_loss, robin_bnd_loss = self.get_all_losses(Xint, Yint,
+                                     Xbnd_neu, Ybnd_neu, Xbnd_robin, Ybnd_robin)
+        return int_loss + neu_bnd_loss + robin_bnd_loss
          
     #Custom loss function
     @tf.function
-    def get_loss(self,Xint, Yint, Xbnd_neu, Ybnd_neu):
-        xPhys = Xint[:,0:1]
-        yPhys = Xint[:,1:2]
-        xPhys_norm = Xint[:,2:3]
-        yPhys_norm = Xint[:,3:4]
-        u_val_int = self.call(Xint)
-        d2udx2_val_int, d2udy2_val_int = self.d2u(xPhys, yPhys)
-        f_val_int = (d2udx2_val_int + d2udy2_val_int)+self.k**2*u_val_int
-        dudx_val_bnd, dudy_val_bnd = self.du(Xbnd_neu)
+    def get_all_losses(self, Xint, Yint, Xbnd_neu, Ybnd_neu, Xbnd_robin, Ybnd_robin):
+        # Evaluate the interior loss
+        xPhys = Xint[:, 0:1]
+        yPhys = Xint[:, 1:2]
+                
+        u_int, v_int = self.w(xPhys, yPhys)
+        d2udx2_int, d2udy2_int, d2vdx2_int, d2vdy2_int = self.d2w(xPhys, yPhys)
+        f_u_int = (d2udx2_int + d2udy2_int) + self.k**2 * u_int
+        f_v_int = (d2vdx2_int + d2vdy2_int) + self.k**2 * v_int
         
-        int_loss = tf.reduce_mean(tf.math.square(f_val_int - Yint))
-        bnd_loss = tf.reduce_mean(tf.math.square(dudx_val_bnd*xPhys_norm + \
-                                         dudy_val_bnd*yPhys_norm - Ybnd_neu))
-        return int_loss+bnd_loss
+        int_loss_u = tf.reduce_mean(tf.math.square(f_u_int - Yint[:,0:1]))
+        int_loss_v = tf.reduce_mean(tf.math.square(f_v_int - Yint[:,1:2]))
+        int_loss = int_loss_u + int_loss_v
+        
+        # Evaluate the Neumann boundary loss
+        xPhys_neu = Xbnd_neu[:, 0:1]
+        yPhys_neu = Xbnd_neu[:, 1:2]
+        xPhys_norm_neu = Xbnd_neu[:, 2:3]
+        yPhys_norm_neu = Xbnd_neu[:, 3:4]
+        
+        dudx_neu, dudy_neu, dvdx_neu, dvdy_neu = self.dw(xPhys_neu, yPhys_neu)        
+        dudn_neu = dudx_neu*xPhys_norm_neu + dudy_neu*yPhys_norm_neu
+        dvdn_neu = dvdx_neu*xPhys_norm_neu + dvdy_neu*yPhys_norm_neu
+        
+        neu_bnd_loss_u = tf.reduce_mean(tf.math.square(dudn_neu - Ybnd_neu[:, 0:1]))
+        neu_bnd_loss_v = tf.reduce_mean(tf.math.square(dvdn_neu - Ybnd_neu[:, 1:2]))
+        neu_bnd_loss = neu_bnd_loss_u + neu_bnd_loss_v
+        
+        # Evaluate the Robin boundary loss                        
+        xPhys_robin = Xbnd_robin[:, 0:1]
+        yPhys_robin = Xbnd_robin[:, 1:2]
+        xPhys_norm_robin = Xbnd_robin[:, 2:3]
+        yPhys_norm_robin = Xbnd_robin[:, 3:4]
+        
+        u_robin, v_robin = self.w(xPhys_robin, yPhys_robin)
+        dudx_robin, dudy_robin, dvdx_robin, dvdy_robin = self.dw(xPhys_robin, yPhys_robin)        
+        dudn_robin = dudx_robin*xPhys_norm_robin + dudy_robin*yPhys_norm_robin
+        dvdn_robin = dvdx_robin*xPhys_norm_robin + dvdy_robin*yPhys_norm_robin
+        
+        robin_bnd_loss_u = tf.reduce_mean(tf.math.square(dudn_robin + \
+                                          self.real_alpha * u_robin - \
+                                          self.imag_alpha * v_robin - \
+                                          Ybnd_robin[:, 0:1]))
+        robin_bnd_loss_v = tf.reduce_mean(tf.math.square(dvdn_robin + \
+                                          self.imag_alpha * u_robin + \
+                                          self.real_alpha * v_robin - \
+                                          Ybnd_robin[:, 1:2]))            
+        robin_bnd_loss = robin_bnd_loss_u + robin_bnd_loss_v
+        
+        return int_loss, neu_bnd_loss, robin_bnd_loss
       
     # get gradients
     @tf.function
-    def get_grad(self, Xint, Yint, Xbnd_neu, Ybnd_neu, Xbnd_rob, Ybnd_rob):
+    def get_grad(self, Xint, Yint, Xbnd_neu, Ybnd_neu, Xbnd_robin, Ybnd_robin):
         with tf.GradientTape() as tape:
             tape.watch(self.trainable_variables)
-            L = self.get_loss(Xint, Yint, Xbnd_neu, Ybnd_neu, Xbnd_rob, Ybnd_rob)
+            L = self.get_loss(Xint, Yint, Xbnd_neu, Ybnd_neu, Xbnd_robin, Ybnd_robin)
         g = tape.gradient(L, self.trainable_variables)
         return L, g
       
     # perform gradient descent
-    def network_learn(self,Xint,Yint, Xbnd_neu, Ybnd_neu, Xbnd_rob, Ybnd_rob):
+    def network_learn(self, Xint, Yint, Xbnd_neu, Ybnd_neu, Xbnd_robin, Ybnd_robin):
         xmin = tf.math.reduce_min(Xint[:,0])
         ymin = tf.math.reduce_min(Xint[:,1])
         xmax = tf.math.reduce_max(Xint[:,0])
@@ -255,7 +305,7 @@ class Helmholtz2D_coll(tf.keras.Model):
         self.bounds = {"lb" : tf.reshape(tf.concat([xmin, ymin], 0), (1,2)),
                        "ub" : tf.reshape(tf.concat([xmax, ymax], 0), (1,2))}
         for i in range(self.num_epoch):
-            L, g = self.get_grad(Xint, Yint, Xbnd_neu, Ybnd_neu, Xbnd_rob, Ybnd_rob)
+            L, g = self.get_grad(Xint, Yint, Xbnd_neu, Ybnd_neu, Xbnd_robin, Ybnd_robin)
             self.train_op.apply_gradients(zip(g, self.trainable_variables))
             if i%self.print_epoch==0:
                 print("Epoch {} loss: {}".format(i, L))
