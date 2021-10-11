@@ -377,7 +377,7 @@ class Wave1D(tf.keras.Model):
         
         dudx_val_bnd, _ = self.du(xPhysBnd, yPhysBnd)
         bnd_loss = tf.reduce_mean(tf.math.square(dudx_val_bnd - Ybnd))
-        return int_loss+init_loss+bnd_loss#+tf.sqrt(tf.square(int_loss-bnd_loss)+0.01)
+        return int_loss+init_loss+bnd_loss
       
     # get gradients
     @tf.function
@@ -507,16 +507,7 @@ class Elasticity2D_coll_dist(tf.keras.Model):
     def get_loss(self,Xint, Yint, Xbnd, Ybnd):
         losses = self.get_all_losses(Xint, Yint, Xbnd, Ybnd)
         return sum(losses)
-    
-    @tf.function
-    def interp_loss(self, Xint, Yint):
-        xPhys = Xint[:,0:1]
-        yPhys = Xint[:,1:2] 
-        ux_val_int, uy_val_int = self.u(xPhys, yPhys)
-        intx_loss = tf.sqrt(tf.reduce_mean(tf.math.square(ux_val_int - Yint[:,0:1])))
-        inty_loss = tf.sqrt(tf.reduce_mean(tf.math.square(uy_val_int - Yint[:,1:2])))        
-        return intx_loss+inty_loss
-      
+          
     # get gradients
     @tf.function
     def get_grad(self, Xint, Yint, Xbnd, Ybnd):
@@ -525,16 +516,7 @@ class Elasticity2D_coll_dist(tf.keras.Model):
             L = self.get_loss(Xint, Yint, Xbnd, Ybnd)
         g = tape.gradient(L, self.trainable_variables)
         return L, g
-    
-    # get gradients
-    @tf.function
-    def get_grad_interp(self, Xint, Yint):
-        with tf.GradientTape() as tape:
-            tape.watch(self.trainable_variables)
-            L = self.interp_loss(Xint, Yint)
-        g = tape.gradient(L, self.trainable_variables)
-        return L, g
-      
+          
     # perform gradient descent
     def network_learn(self,Xint,Yint, Xbnd, Ybnd):
         xmin = tf.math.reduce_min(Xint[:,0])
@@ -551,12 +533,107 @@ class Elasticity2D_coll_dist(tf.keras.Model):
                 L = int_loss_x + int_loss_y + loss_bond
                 print("Epoch {} loss: {}, int_loss_x: {}, int_loss_y: {}".format(i, 
                                                                     L, int_loss_x, int_loss_y))
-            # if i%1000==0:
-            #     numPtsUTest = 101
-            #     numPtsVTest = 101
-            #     plot_solution(numPtsUTest, numPtsVTest, domain, self, data_type)
+ 
+                
+class Elasticity2D_DEM_dist(tf.keras.Model): 
+    def __init__(self, layers, train_op, num_epoch, print_epoch, model_data, data_type):
+        super(Elasticity2D_DEM_dist, self).__init__()
+        self.model_layers = layers
+        self.train_op = train_op
+        self.num_epoch = num_epoch
+        self.print_epoch = print_epoch
+        self.data_type = data_type
+        self.Emod = model_data["E"]
+        self.nu = model_data["nu"]
+        if model_data["state"]=="plane strain":
+            self.Emat = self.Emod/((1+self.nu)*(1-2*self.nu))*\
+                                    tf.constant([[1-self.nu, self.nu, 0], 
+                                                 [self.nu, 1-self.nu, 0], 
+                                                 [0, 0, (1-2*self.nu)/2]],dtype=data_type)
+        elif model_data["state"]=="plane stress":
+            self.Emat = self.Emod/(1-self.nu**2)*tf.constant([[1, self.nu, 0], 
+                                                              [self.nu, 1, 0], 
+                                                              [0, 0, (1-self.nu)/2]],dtype=data_type)
+    #@tf.function                                
+    def call(self, X):
+        uVal, vVal = self.u(X[:,0:1], X[:,1:2])
+        return tf.concat([uVal, vVal],1)
+    
+    def dirichletBound(self, X, xPhys, yPhys):
+        u_val = X[:,0:1]
+        v_val = X[:,1:2]
+        return u_val, v_val
+          
+    # Running the model
+    @tf.function
+    def u(self, xPhys, yPhys):
+        X = tf.concat([xPhys, yPhys],1)
+        X = 2.0*(X - self.bounds["lb"])/(self.bounds["ub"] - self.bounds["lb"]) - 1.0
+        for l in self.model_layers:
+            X = l(X)     
             
-    def network_interp(self, Xint, Yint, Xbnd, Ybnd, Yint_interp):
+        # impose the boundary conditions
+        u_val, v_val = self.dirichletBound(X, xPhys, yPhys)                          
+        return u_val, v_val
+    
+    # Compute the strains
+    @tf.function
+    def kinematicEq(self, xPhys, yPhys):        
+        with tf.GradientTape(persistent=True) as tape:
+            tape.watch(xPhys)
+            tape.watch(yPhys)
+            u_val, v_val = self.u(xPhys, yPhys)
+        eps_xx_val = tape.gradient(u_val, xPhys)
+        eps_yy_val = tape.gradient(v_val, yPhys)
+        eps_xy_val = tape.gradient(u_val, yPhys) + tape.gradient(v_val, xPhys)
+        del tape        
+        return eps_xx_val, eps_yy_val, eps_xy_val
+    
+    # Compute the stresses
+    @tf.function
+    def constitutiveEq(self, xPhys, yPhys):
+        eps_xx_val, eps_yy_val, eps_xy_val = self.kinematicEq(xPhys, yPhys)       
+        eps_val = tf.transpose(tf.concat([eps_xx_val, eps_yy_val, eps_xy_val],1))
+        stress_val = tf.transpose(tf.linalg.matmul(self.Emat, eps_val))
+        stress_xx_val = stress_val[:,0:1]
+        stress_yy_val = stress_val[:,1:2]
+        stress_xy_val = stress_val[:,2:3]
+        return stress_xx_val, stress_yy_val, stress_xy_val
+        
+    #Custom loss function
+    @tf.function
+    def get_all_losses(self, Xint, Wint, Xbnd, Wbnd, Ybnd):
+        # calculate the interior loss
+        xPhys_int = Xint[:,0:1]
+        yPhys_int = Xint[:,1:2]                
+        sigma_xx_int, sigma_yy_int, sigma_xy_int = self.constitutiveEq(xPhys_int, yPhys_int)
+        eps_xx_int, eps_yy_int, eps_xy_int = self.kinematicEq(xPhys_int, yPhys_int)
+        loss_int = tf.reduce_sum(1/2*(eps_xx_int*sigma_xx_int + eps_yy_int*sigma_yy_int + \
+                                      eps_xy_int*sigma_xy_int)*Wint)
+        
+        # calculate the boundary loss corresponding to the Neumann boundary
+        xPhys_bnd = Xbnd[:, 0:1]
+        yPhys_bnd = Xbnd[:, 1:2]        
+        u_val_bnd, v_val_bnd = self.u(xPhys_bnd, yPhys_bnd)                
+        loss_bnd = tf.reduce_sum((u_val_bnd*Ybnd[:, 0:1] + v_val_bnd*Ybnd[:, 1:2])*Wbnd)
+        return loss_int, loss_bnd
+    
+    @tf.function
+    def get_loss(self,Xint, Wint, Xbnd, Wbnd, Ybnd):
+        loss_int, loss_bnd = self.get_all_losses(Xint, Wint, Xbnd, Wbnd, Ybnd)
+        return loss_int - loss_bnd
+          
+    # get gradients
+    @tf.function
+    def get_grad(self, Xint, Wint, Xbnd, Wbnd, Ybnd):
+        with tf.GradientTape() as tape:
+            tape.watch(self.trainable_variables)
+            L = self.get_loss(Xint, Wint, Xbnd, Wbnd, Ybnd)
+        g = tape.gradient(L, self.trainable_variables)
+        return L, g    
+      
+    # perform gradient descent
+    def network_learn(self, Xint, Wint, Xbnd, Wbnd, Ybnd):
         xmin = tf.math.reduce_min(Xint[:,0])
         ymin = tf.math.reduce_min(Xint[:,1])
         xmax = tf.math.reduce_max(Xint[:,0])
@@ -564,13 +641,12 @@ class Elasticity2D_coll_dist(tf.keras.Model):
         self.bounds = {"lb" : tf.reshape(tf.concat([xmin, ymin], 0), (1,2)),
                        "ub" : tf.reshape(tf.concat([xmax, ymax], 0), (1,2))}
         for i in range(self.num_epoch):
-            L, g = self.get_grad_interp(Xint, Yint_interp)
+            L, g = self.get_grad(Xint, Wint, Xbnd, Wbnd, Ybnd)
             self.train_op.apply_gradients(zip(g, self.trainable_variables))
             if i%self.print_epoch==0:
-                int_loss_x, int_loss_y, loss_bond = self.get_all_losses(Xint, Yint, Xbnd, Ybnd)
-                L2 = int_loss_x + int_loss_y + loss_bond
-                print("Epoch {} loss: {}, int_loss_x: {}, int_loss_y: {}".format(i, 
-                                                                    L2, int_loss_x, int_loss_y))
-                print("Interp loss: {}".format(L))
-                
-                
+                loss_int, loss_bnd = self.get_all_losses(Xint,
+                                                    Wint, Xbnd, Wbnd, Ybnd)
+                L = loss_int - loss_bnd
+                print("Epoch {} loss: {}, loss_int: {}, loss_bnd: {}".format(i, 
+                                                                    L, loss_int, loss_bnd))
+    
