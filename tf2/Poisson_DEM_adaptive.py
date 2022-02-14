@@ -3,7 +3,8 @@
 """
 Poisson equation example
 Solve the equation -u''(x) = f(x) for x\in(a,b) with Dirichlet boundary conditions u(a)=u0, u(b)=1
-Implementation with Deep Energy Method
+Implementation with Deep Energy Method with adaptive activation function 
+(see https://doi.org/10.1016/j.jcp.2019.109136)
 """
 import tensorflow as tf
 import numpy as np
@@ -17,15 +18,24 @@ mpl.rcParams['figure.dpi'] = 200
 tf.random.set_seed(42)
 
 class model(tf.keras.Model): 
-    def __init__(self, layers, train_op, num_epoch, print_epoch):
+    def __init__(self, train_op, num_epoch, print_epoch, data_type):
         super(model, self).__init__()
-        self.model_layers = layers
+        l1 = tf.keras.layers.Dense(64, self.adaptive_tanh)
+        l2 = tf.keras.layers.Dense(64, self.adaptive_tanh)
+        l3 = tf.keras.layers.Dense(1, None)
+        self.model_layers = [l1, l2, l3]
         self.train_op = train_op
         self.num_epoch = num_epoch
         self.print_epoch = print_epoch
-            
+        self.a = tf.Variable(0.1, dtype=data_type)
+    
+    def adaptive_tanh(self, x):
+        return tf.math.tanh(10*self.a*x)
+        
     def call(self, X):
         return self.u(X)
+    
+    
     
     # Running the model
     def u(self,X):
@@ -75,8 +85,8 @@ class model(tf.keras.Model):
             if i%self.print_epoch==0:
                 int_loss, bnd_loss_dir = self.get_all_losses(Xint, Yint, Wint, Xbnd, Ybnd)
                 L = int_loss + bnd_loss_dir
-                print("Epoch {} loss: {}, int_loss_x: {}, bnd_loss_dir: {}".format(i, 
-                                                                    L, int_loss, bnd_loss_dir))                
+                print("Epoch {} loss: {}, int_loss_x: {}, bnd_loss_dir: {}, a: {}".format(i, 
+                                                        L, int_loss, bnd_loss_dir, self.a.numpy()))                
 
 def generate_quad_pts_weights_1d(x_min=0, x_max=1, num_elem=10, num_gauss_pts=4):
     """
@@ -152,13 +162,11 @@ Ybnd = exact_sol(Xbnd)
 
 #define the model 
 tf.keras.backend.set_floatx(data_type)
-l1 = tf.keras.layers.Dense(64, "tanh")
-l2 = tf.keras.layers.Dense(64, "tanh")
-l3 = tf.keras.layers.Dense(1, None)
+
 train_op = tf.keras.optimizers.Adam()
-num_epoch = 10000
+num_epoch = 3000
 print_epoch = 100
-pred_model = model([l1, l3], train_op, num_epoch, print_epoch)
+pred_model = model(train_op, num_epoch, print_epoch, data_type)
 
 #convert the training data to tensors
 Xint_tf = tf.convert_to_tensor(Xint)
