@@ -118,9 +118,8 @@ class CalculateUPhi:
         return phi
     
     def net_hist(self,x,y):
-        
-        shape = tf.shape(x)
-        init_hist = tf.zeros((shape[0],shape[1]), dtype = np.float32)
+                
+        init_hist = tf.zeros_like(x)        
         dist = tf.where(x > self.crackTip, tf.sqrt((x-0.5)**2 + (y-0.5)**2), tf.abs(y-0.5))
         init_hist = tf.where(dist < 0.5*self.l, self.B*self.cEnerg*0.5*(1-(2*dist/self.l))/self.l, init_hist)
         
