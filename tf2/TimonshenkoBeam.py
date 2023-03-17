@@ -79,7 +79,7 @@ numPtsU = 80
 numPtsV = 40
 #xPhys, yPhys = myQuad.getRandomIntPts(numPtsU*numPtsV)
 xPhys, yPhys = geomDomain.getUnifIntPts(numPtsU,numPtsV,[0,0,0,0])
-data_type = "float32"
+data_type = "float64"
 
 Xint = np.concatenate((xPhys,yPhys),axis=1).astype(data_type)
 Yint = np.zeros_like(Xint).astype(data_type)
@@ -141,7 +141,7 @@ l3 = tf.keras.layers.Dense(20, "swish")
 l4 = tf.keras.layers.Dense(2, None)
 train_op = tf.keras.optimizers.Adam()
 train_op2 = "TFP-BFGS"
-num_epoch = 15000
+num_epoch = 1000
 print_epoch = 100
 pred_model = Elast_TimoshenkoBeam([l1, l2, l3, l4], train_op, num_epoch, 
                                     print_epoch, model_data, data_type)
@@ -180,7 +180,7 @@ else:
     # train the model with L-BFGS solver
     results = tfp.optimizer.bfgs_minimize(
         value_and_gradients_function=loss_func, initial_position=init_params,
-              max_iterations=10000, tolerance=1e-14)  
+              max_iterations=1000, tolerance=1e-6)  
     # after training, the final optimized parameters are still in results.position
     # so we have to manually put them back to the model
     loss_func.assign_new_model_parameters(results.position)    

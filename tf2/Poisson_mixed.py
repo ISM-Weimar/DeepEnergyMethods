@@ -103,7 +103,7 @@ def deriv_exact_sol(input):
 xmin = 0
 xmax = 1
 numPts = 201
-data_type = "float32"
+data_type = "float64"
 
 Xint = np.linspace(xmin, xmax, numPts).astype(data_type)
 Xint = np.array(Xint)[np.newaxis].T

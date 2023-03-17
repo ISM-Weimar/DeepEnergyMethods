@@ -47,7 +47,7 @@ if __name__ == "__main__":
     numPtsU = 28
     numPtsV = 28
     xPhys, yPhys = myQuad.getUnifIntPts(numPtsU, numPtsV, [0,0,0,0])
-    data_type = "float32"
+    data_type = "float64"
     
     Xint = np.concatenate((xPhys,yPhys),axis=1).astype(data_type)
     Yint = rhs_fun(Xint[:,[0]], Xint[:,[1]])
@@ -63,7 +63,7 @@ if __name__ == "__main__":
     l3 = tf.keras.layers.Dense(20, "tanh")
     l4 = tf.keras.layers.Dense(1, None)
     train_op = tf.keras.optimizers.Adam()
-    num_epoch = 5000
+    num_epoch = 1000
     print_epoch = 100
     pred_model = Poisson2D_coll([l1, l2, l3, l4], train_op, num_epoch, print_epoch)
     
@@ -85,10 +85,10 @@ if __name__ == "__main__":
     #loss_func = scipy_function_factory(pred_model, Xint_tf, Yint_tf, Xbnd_tf, Ybnd_tf)
     # convert initial model parameters to a 1D tf.Tensor
     init_params = tf.dynamic_stitch(loss_func.idx, pred_model.trainable_variables)#.numpy()
-    # train the model with L-BFGS solver
-    results = tfp.optimizer.lbfgs_minimize(
+    # train the model with BFGS solver
+    results = tfp.optimizer.bfgs_minimize(
         value_and_gradients_function=loss_func, initial_position=init_params,
-              max_iterations=1500, num_correction_pairs=50, tolerance=1e-14)  
+              max_iterations=1000, tolerance=1e-14)  
     # results = scipy.optimize.minimize(fun=loss_func, x0=init_params, jac=True, method='L-BFGS-B',
     #                 options={'disp': None, 'maxls': 50, 'iprint': -1, 
     #                 'gtol': 1e-12, 'eps': 1e-12, 'maxiter': 50000, 'ftol': 1e-12, 

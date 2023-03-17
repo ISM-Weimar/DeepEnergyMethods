@@ -79,8 +79,8 @@ class Poisson2D_coll(tf.keras.Model):
         ymin = tf.math.reduce_min(Xint[:,1])
         xmax = tf.math.reduce_max(Xint[:,0])
         ymax = tf.math.reduce_max(Xint[:,1])
-        self.bounds = {"lb" : tf.reshape(tf.concat([xmin, ymin], 0), (1,2)),
-                       "ub" : tf.reshape(tf.concat([xmax, ymax], 0), (1,2))}
+        self.bounds = {"lb" : tf.reshape(tf.stack([xmin, ymin], 0), (1,2)),
+                       "ub" : tf.reshape(tf.stack([xmax, ymax], 0), (1,2))}
         for i in range(self.num_epoch):
             L, g = self.get_grad(Xint, Yint, Xbnd, Ybnd)
             self.train_op.apply_gradients(zip(g, self.trainable_variables))
@@ -166,8 +166,8 @@ class Poisson2D_DEM(tf.keras.Model):
         ymin = tf.math.reduce_min(Xint[:,1])
         xmax = tf.math.reduce_max(Xint[:,0])
         ymax = tf.math.reduce_max(Xint[:,1])
-        self.bounds = {"lb" : tf.reshape(tf.concat([xmin, ymin], 0), (1,2)),
-                       "ub" : tf.reshape(tf.concat([xmax, ymax], 0), (1,2))}
+        self.bounds = {"lb" : tf.reshape(tf.stack([xmin, ymin], 0), (1,2)),
+                       "ub" : tf.reshape(tf.stack([xmax, ymax], 0), (1,2))}
         for i in range(self.num_epoch):
             L, g = self.get_grad(Xint, Wint, Yint, Xbnd, Wbnd, Ybnd)
             self.train_op.apply_gradients(zip(g, self.trainable_variables))
@@ -302,8 +302,8 @@ class Helmholtz2D_coll(tf.keras.Model):
         ymin = tf.math.reduce_min(Xint[:,1])
         xmax = tf.math.reduce_max(Xint[:,0])
         ymax = tf.math.reduce_max(Xint[:,1])
-        self.bounds = {"lb" : tf.reshape(tf.concat([xmin, ymin], 0), (1,2)),
-                       "ub" : tf.reshape(tf.concat([xmax, ymax], 0), (1,2))}
+        self.bounds = {"lb" : tf.reshape(tf.stack([xmin, ymin], 0), (1,2)),
+                       "ub" : tf.reshape(tf.stack([xmax, ymax], 0), (1,2))}
         for i in range(self.num_epoch):
             L, g = self.get_grad(Xint, Yint, Xbnd_neu, Ybnd_neu, Xbnd_robin, Ybnd_robin)
             self.train_op.apply_gradients(zip(g, self.trainable_variables))
@@ -398,8 +398,8 @@ class Wave1D(tf.keras.Model):
         print("ymin =", ymin)
         print("xmax =", xmax)
         print("ymax =", ymax)
-        self.bounds = {"lb" : tf.reshape(tf.concat([xmin, ymin], 0), (1,2)),
-                       "ub" : tf.reshape(tf.concat([xmax, ymax], 0), (1,2))}
+        self.bounds = {"lb" : tf.reshape(tf.stack([xmin, ymin], 0), (1,2)),
+                       "ub" : tf.reshape(tf.stack([xmax, ymax], 0), (1,2))}
         for i in range(self.num_epoch):
             L, g = self.get_grad(Xint, Yint, Xbnd, Ybnd, Xinit, Yinit)
             self.train_op.apply_gradients(zip(g, self.trainable_variables))
@@ -523,8 +523,8 @@ class Elasticity2D_coll_dist(tf.keras.Model):
         ymin = tf.math.reduce_min(Xint[:,1])
         xmax = tf.math.reduce_max(Xint[:,0])
         ymax = tf.math.reduce_max(Xint[:,1])
-        self.bounds = {"lb" : tf.reshape(tf.concat([xmin, ymin], 0), (1,2)),
-                       "ub" : tf.reshape(tf.concat([xmax, ymax], 0), (1,2))}
+        self.bounds = {"lb" : tf.reshape(tf.stack([xmin, ymin], 0), (1,2)),
+                       "ub" : tf.reshape(tf.stack([xmax, ymax], 0), (1,2))}
         for i in range(self.num_epoch):
             L, g = self.get_grad(Xint, Yint, Xbnd, Ybnd)
             self.train_op.apply_gradients(zip(g, self.trainable_variables))
@@ -638,8 +638,8 @@ class Elasticity2D_DEM_dist(tf.keras.Model):
         ymin = tf.math.reduce_min(Xint[:,1])
         xmax = tf.math.reduce_max(Xint[:,0])
         ymax = tf.math.reduce_max(Xint[:,1])
-        self.bounds = {"lb" : tf.reshape(tf.concat([xmin, ymin], 0), (1,2)),
-                       "ub" : tf.reshape(tf.concat([xmax, ymax], 0), (1,2))}
+        self.bounds = {"lb" : tf.reshape(tf.stack([xmin, ymin], 0), (1,2)),
+                       "ub" : tf.reshape(tf.stack([xmax, ymax], 0), (1,2))}
         for i in range(self.num_epoch):
             L, g = self.get_grad(Xint, Wint, Xbnd, Wbnd, Ybnd)
             self.train_op.apply_gradients(zip(g, self.trainable_variables))

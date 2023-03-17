@@ -181,7 +181,7 @@ print("Training (TFP-BFGS)...")
 loss_func = tfp_function_factory(pred_model, Xint_tf, Wint_tf, Xbnd_tf, Wbnd_tf, Ybnd_tf)
 # convert initial model parameters to a 1D tf.Tensor
 init_params = tf.dynamic_stitch(loss_func.idx, pred_model.trainable_variables)
-# train the model with L-BFGS solver
+# train the model with BFGS solver
 results = tfp.optimizer.bfgs_minimize(
     value_and_gradients_function=loss_func, initial_position=init_params,
           max_iterations=1000, tolerance=1e-14)  

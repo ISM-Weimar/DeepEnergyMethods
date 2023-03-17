@@ -54,7 +54,7 @@ numGauss = 4
 boundary_weight = 1e4
 
 xPhys, yPhys, Wint = myQuad.getQuadIntPts(numElemU, numElemV, numGauss)
-data_type = "float32"
+data_type = "float64"
 
 Xint = np.concatenate((xPhys,yPhys),axis=1).astype(data_type)
 Wint = Wint.astype(data_type)
@@ -79,7 +79,7 @@ l2 = tf.keras.layers.Dense(20, "tanh")
 l3 = tf.keras.layers.Dense(20, "tanh")
 l4 = tf.keras.layers.Dense(1, None)
 train_op = tf.keras.optimizers.Adam()
-num_epoch = 10000
+num_epoch = 1000
 print_epoch = 100
 pred_model = Poisson2D_DEM([l1, l2, l3, l4], train_op, num_epoch, print_epoch)
 
@@ -107,7 +107,7 @@ init_params = tf.dynamic_stitch(loss_func.idx, pred_model.trainable_variables)#.
 # train the model with BFGS solver
 results = tfp.optimizer.bfgs_minimize(
     value_and_gradients_function=loss_func, initial_position=init_params,
-          max_iterations=50000, tolerance=1e-14)  
+          max_iterations=1000, tolerance=1e-14)  
 
 # after training, the final optimized parameters are still in results.position
 # so we have to manually put them back to the model

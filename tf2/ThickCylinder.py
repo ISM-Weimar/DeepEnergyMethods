@@ -77,7 +77,7 @@ numPtsU = 50
 numPtsV = 50
 #xPhys, yPhys = myQuad.getRandomIntPts(numPtsU*numPtsV)
 xPhys, yPhys = geomDomain.getUnifIntPts(numPtsU,numPtsV,[1,0,1,0])
-data_type = "float32"
+data_type = "float64"
 
 Xint = np.concatenate((xPhys,yPhys),axis=1).astype(data_type)
 Yint = np.zeros_like(Xint).astype(data_type)
@@ -170,10 +170,10 @@ else:
     loss_func = tfp_function_factory(pred_model, Xint_tf, Yint_tf, Xbnd_tf, Ybnd_tf)
     # convert initial model parameters to a 1D tf.Tensor
     init_params = tf.dynamic_stitch(loss_func.idx, pred_model.trainable_variables)
-    # train the model with L-BFGS solver
+    # train the model with BFGS solver
     results = tfp.optimizer.bfgs_minimize(
         value_and_gradients_function=loss_func, initial_position=init_params,
-              max_iterations=10000, tolerance=1e-14)  
+              max_iterations=1000, tolerance=1e-14)  
     # after training, the final optimized parameters are still in results.position
     # so we have to manually put them back to the model
     loss_func.assign_new_model_parameters(results.position)    

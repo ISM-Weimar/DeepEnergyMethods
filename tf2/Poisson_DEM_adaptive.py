@@ -149,7 +149,7 @@ def deriv_exact_sol(x):
 #define the input and output data set
 xmin = 0
 xmax = 1
-data_type = "float32"
+data_type = "float64"
 
 Xint, Wint = generate_quad_pts_weights_1d(x_min=xmin, x_max=xmax, num_elem=50, num_gauss_pts=4)
 Xint = np.array(Xint)[np.newaxis].T.astype(data_type)

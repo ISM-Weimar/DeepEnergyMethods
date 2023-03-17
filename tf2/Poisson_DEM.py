@@ -139,7 +139,7 @@ def deriv_exact_sol(x):
 #define the input and output data set
 xmin = 0
 xmax = 1
-data_type = "float32"
+data_type = "float64"
 
 Xint, Wint = generate_quad_pts_weights_1d(x_min=xmin, x_max=xmax, num_elem=50, num_gauss_pts=4)
 Xint = np.array(Xint)[np.newaxis].T.astype(data_type)
@@ -156,7 +156,7 @@ l1 = tf.keras.layers.Dense(64, "tanh")
 l2 = tf.keras.layers.Dense(64, "tanh")
 l3 = tf.keras.layers.Dense(1, None)
 train_op = tf.keras.optimizers.Adam()
-num_epoch = 10000
+num_epoch = 1000
 print_epoch = 100
 pred_model = model([l1, l3], train_op, num_epoch, print_epoch)
 
@@ -182,7 +182,7 @@ init_params = tf.dynamic_stitch(loss_func.idx, pred_model.trainable_variables)
 # train the model with BFGS solver
 results = tfp.optimizer.bfgs_minimize(
     value_and_gradients_function=loss_func, initial_position=init_params,
-          max_iterations=50000, tolerance=1e-14)  
+          max_iterations=1000, tolerance=1e-14)  
 # after training, the final optimized parameters are still in results.position
 # so we have to manually put them back to the model
 loss_func.assign_new_model_parameters(results.position)

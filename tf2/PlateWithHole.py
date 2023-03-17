@@ -117,7 +117,7 @@ geomDomain = PlateWHole(model_data['radInt'], model_data['lenSquare'])
 numPtsU = 50
 numPtsV = 50
 xPhys, yPhys = geomDomain.getUnifIntPts(numPtsU,numPtsV,[0,0,0,0])
-data_type = "float32"
+data_type = "float64"
 
 Xint = np.concatenate((xPhys,yPhys),axis=1).astype(data_type)
 Yint = np.zeros_like(Xint).astype(data_type)
@@ -182,7 +182,7 @@ l3 = tf.keras.layers.Dense(20, "swish")
 l4 = tf.keras.layers.Dense(2, None)
 train_op = tf.keras.optimizers.Adam()
 train_op2 = "TFP-BFGS"
-num_epoch = 10000
+num_epoch = 1000
 print_epoch = 100
 pred_model = Elast_PlateWithHole([l1, l2, l3, l4], train_op, num_epoch, 
                                     print_epoch, model_data, data_type)
@@ -208,7 +208,7 @@ if train_op2=="SciPy-LBFGS-B":
     results = scipy.optimize.minimize(fun=loss_func, x0=init_params, jac=True, method='L-BFGS-B',
                 options={'disp': None, 'maxls': 50, 'iprint': -1, 
                 'gtol': 1e-6, 'eps': 1e-6, 'maxiter': 50000, 'ftol': 1e-6, 
-                'maxcor': 50, 'maxfun': 50000})
+                'maxcor': 50, 'maxfun': 3000})
     # after training, the final optimized parameters are still in results.position
     # so we have to manually put them back to the model
     loss_func.assign_new_model_parameters(results.x)
@@ -218,10 +218,10 @@ else:
     loss_func = tfp_function_factory(pred_model, Xint_tf, Yint_tf, Xbnd_tf, Ybnd_tf)
     # convert initial model parameters to a 1D tf.Tensor
     init_params = tf.dynamic_stitch(loss_func.idx, pred_model.trainable_variables)
-    # train the model with L-BFGS solver
+    # train the model with BFGS solver
     results = tfp.optimizer.bfgs_minimize(
         value_and_gradients_function=loss_func, initial_position=init_params,
-              max_iterations=10000, tolerance=1e-14)  
+              max_iterations=2000, tolerance=1e-14)  
     # after training, the final optimized parameters are still in results.position
     # so we have to manually put them back to the model
     loss_func.assign_new_model_parameters(results.position)    

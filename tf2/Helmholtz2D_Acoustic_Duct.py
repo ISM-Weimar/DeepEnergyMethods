@@ -84,7 +84,7 @@ myQuad = Quadrilateral(domainCorners)
 numPtsU = 28
 numPtsV = 28
 xPhys, yPhys = myQuad.getUnifIntPts(numPtsU, numPtsV, [0,0,0,0])
-data_type = "float32"
+data_type = "float64"
 
 Xint = np.concatenate((xPhys,yPhys),axis=1).astype(data_type)
 Yint = np.zeros_like(Xint)
@@ -112,7 +112,7 @@ l2 = tf.keras.layers.Dense(20, "tanh")
 l3 = tf.keras.layers.Dense(20, "tanh")
 l4 = tf.keras.layers.Dense(2, None)
 train_op = tf.keras.optimizers.Adam()
-num_epoch = 10000
+num_epoch = 5000
 print_epoch = 100
 alpha_real = np.real([alpha]).astype(data_type)[0]
 alpha_imag = np.imag([alpha]).astype(data_type)[0]
@@ -140,10 +140,10 @@ loss_func = tfp_function_factory(pred_model, Xint_tf, Yint_tf,
 #loss_func = scipy_function_factory(pred_model, Xint_tf, Yint_tf, Xbnd_tf, Ybnd_tf)
 # convert initial model parameters to a 1D tf.Tensor
 init_params = tf.dynamic_stitch(loss_func.idx, pred_model.trainable_variables)
-# train the model with L-BFGS solver
+# train the model with BFGS solver
 results = tfp.optimizer.bfgs_minimize(
     value_and_gradients_function=loss_func, initial_position=init_params,
-          max_iterations=50000, tolerance=1e-14)
+          max_iterations=3000, tolerance=1e-14)
 
 # after training, the final optimized parameters are still in results.position
 # so we have to manually put them back to the model
