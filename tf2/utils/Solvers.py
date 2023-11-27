@@ -14,6 +14,7 @@ class Poisson2D_coll(tf.keras.Model):
         self.train_op = train_op
         self.num_epoch = num_epoch
         self.print_epoch = print_epoch
+        self.adam_loss_hist = []
             
     def call(self, X):
         return self.u(X[:,0:1], X[:,1:2])
@@ -84,6 +85,7 @@ class Poisson2D_coll(tf.keras.Model):
         for i in range(self.num_epoch):
             L, g = self.get_grad(Xint, Yint, Xbnd, Ybnd)
             self.train_op.apply_gradients(zip(g, self.trainable_variables))
+            self.adam_loss_hist.append(L)
             if i%self.print_epoch==0:
                 print("Epoch {} loss: {}".format(i, L))
                                 
@@ -94,6 +96,7 @@ class Poisson2D_DEM(tf.keras.Model):
         self.train_op = train_op
         self.num_epoch = num_epoch
         self.print_epoch = print_epoch
+        self.adam_loss_hist = []
             
     def call(self, X):
         return self.u(X[:,0:1], X[:,1:2])
@@ -171,6 +174,7 @@ class Poisson2D_DEM(tf.keras.Model):
         for i in range(self.num_epoch):
             L, g = self.get_grad(Xint, Wint, Yint, Xbnd, Wbnd, Ybnd)
             self.train_op.apply_gradients(zip(g, self.trainable_variables))
+            self.adam_loss_hist.append(L)
             if i%self.print_epoch==0:
                 print("Epoch {} loss: {}".format(i, L))
                 
@@ -186,6 +190,7 @@ class Helmholtz2D_coll(tf.keras.Model):
         self.k = k
         self.real_alpha = real_alpha
         self.imag_alpha = imag_alpha
+        self.adam_loss_hist = []
             
     def call(self, X):
         u_val, v_val = self.w(X[:,0:1], X[:,1:2])        
@@ -307,6 +312,7 @@ class Helmholtz2D_coll(tf.keras.Model):
         for i in range(self.num_epoch):
             L, g = self.get_grad(Xint, Yint, Xbnd_neu, Ybnd_neu, Xbnd_robin, Ybnd_robin)
             self.train_op.apply_gradients(zip(g, self.trainable_variables))
+            self.adam_loss_hist.append(L)
             if i%self.print_epoch==0:
                 print("Epoch {} loss: {}".format(i, L))
                 
@@ -317,6 +323,7 @@ class Wave1D(tf.keras.Model):
         self.train_op = train_op
         self.num_epoch = num_epoch
         self.print_epoch = print_epoch
+        self.adam_loss_hist = []
             
     def call(self, X):
         return self.u(X[:,0:1], X[:,1:2])
@@ -403,6 +410,7 @@ class Wave1D(tf.keras.Model):
         for i in range(self.num_epoch):
             L, g = self.get_grad(Xint, Yint, Xbnd, Ybnd, Xinit, Yinit)
             self.train_op.apply_gradients(zip(g, self.trainable_variables))
+            self.adam_loss_hist.append(L)
             if i%self.print_epoch==0:
                 print("Epoch {} loss: {}".format(i, L))
                 
@@ -426,6 +434,7 @@ class Elasticity2D_coll_dist(tf.keras.Model):
             self.Emat = self.Emod/(1-self.nu**2)*tf.constant([[1, self.nu, 0], 
                                                               [self.nu, 1, 0], 
                                                               [0, 0, (1-self.nu)/2]],dtype=data_type)
+        self.adam_loss_hist = []
     @tf.function                                
     def call(self, X):
         uVal, vVal = self.u(X[:,0:1], X[:,1:2])
@@ -528,6 +537,7 @@ class Elasticity2D_coll_dist(tf.keras.Model):
         for i in range(self.num_epoch):
             L, g = self.get_grad(Xint, Yint, Xbnd, Ybnd)
             self.train_op.apply_gradients(zip(g, self.trainable_variables))
+            self.adam_loss_hist.append(L)
             if i%self.print_epoch==0:
                 int_loss_x, int_loss_y, loss_bond = self.get_all_losses(Xint, Yint, Xbnd, Ybnd)
                 L = int_loss_x + int_loss_y + loss_bond
@@ -554,6 +564,7 @@ class Elasticity2D_DEM_dist(tf.keras.Model):
             self.Emat = self.Emod/(1-self.nu**2)*tf.constant([[1, self.nu, 0], 
                                                               [self.nu, 1, 0], 
                                                               [0, 0, (1-self.nu)/2]],dtype=data_type)
+        self.adam_loss_hist = []
     #@tf.function                                
     def call(self, X):
         uVal, vVal = self.u(X[:,0:1], X[:,1:2])
@@ -643,6 +654,7 @@ class Elasticity2D_DEM_dist(tf.keras.Model):
         for i in range(self.num_epoch):
             L, g = self.get_grad(Xint, Wint, Xbnd, Wbnd, Ybnd)
             self.train_op.apply_gradients(zip(g, self.trainable_variables))
+            self.adam_loss_hist.append(L)
             if i%self.print_epoch==0:
                 loss_int, loss_bnd = self.get_all_losses(Xint,
                                                     Wint, Xbnd, Wbnd, Ybnd)

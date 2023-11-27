@@ -4,17 +4,18 @@
 Poisson equation example
 Solve the equation -u''(x) = f(x) for x\in(a,b) with Dirichlet boundary conditions u(a)=u0, u(b)=1
 Implementation with Deep Energy Method with adaptive activation function 
-(see https://doi.org/10.1016/j.jcp.2019.109136)
+(see https://doi.org/10.1016/j.jcp.2019.109136 )
 """
 import tensorflow as tf
 import numpy as np
 import time
-from utils.tfp_loss import tfp_function_factory
 import tensorflow_probability as tfp
 import matplotlib.pyplot as plt
-#make figures bigger on HiDPI monitors
-import matplotlib as mpl
-mpl.rcParams['figure.dpi'] = 200
+
+from utils.tfp_loss import tfp_function_factory
+from utils.Plotting import plot_convergence_dem
+
+
 tf.random.set_seed(42)
 
 class model(tf.keras.Model): 
@@ -28,6 +29,7 @@ class model(tf.keras.Model):
         self.num_epoch = num_epoch
         self.print_epoch = print_epoch
         self.a = tf.Variable(0.1, dtype=data_type)
+        self.adam_loss_hist = []
     
     def adaptive_tanh(self, x):
         return tf.math.tanh(10*self.a*x)
@@ -82,6 +84,7 @@ class model(tf.keras.Model):
         for i in range(self.num_epoch):
             L, g = self.get_grad(Xint, Yint, Wint, XbndDir, YbndDir)
             self.train_op.apply_gradients(zip(g, self.trainable_variables))
+            self.adam_loss_hist.append(L)
             if i%self.print_epoch==0:
                 int_loss, bnd_loss_dir = self.get_all_losses(Xint, Yint, Wint, Xbnd, Ybnd)
                 L = int_loss + bnd_loss_dir
@@ -190,7 +193,7 @@ init_params = tf.dynamic_stitch(loss_func.idx, pred_model.trainable_variables)
 # train the model with BFGS solver
 results = tfp.optimizer.bfgs_minimize(
     value_and_gradients_function=loss_func, initial_position=init_params,
-          max_iterations=50000, tolerance=1e-14)  
+          max_iterations=300, tolerance=1e-14)  
 # after training, the final optimized parameters are still in results.position
 # so we have to manually put them back to the model
 loss_func.assign_new_model_parameters(results.position)
@@ -231,3 +234,6 @@ plt.plot(x_test, err_deriv)
 plt.title("Error for first derivative")
 plt.show
 print("Relative error for first derivative: {}".format(np.linalg.norm(err_deriv)/np.linalg.norm(dy_exact)))
+
+# plot the loss convergence
+plot_convergence_dem(pred_model.adam_loss_hist, loss_func.history, percentile=95.)

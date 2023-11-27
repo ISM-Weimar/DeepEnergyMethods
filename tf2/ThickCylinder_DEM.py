@@ -25,15 +25,14 @@ Use DEM
 import tensorflow as tf
 import numpy as np
 import time
+import tensorflow_probability as tfp
+import matplotlib.pyplot as plt
+
 from utils.tfp_loss import tfp_function_factory
 from utils.Geom_examples import QuarterAnnulus
 from utils.Solvers import Elasticity2D_DEM_dist
-from utils.Plotting import plot_field_2d
-import tensorflow_probability as tfp
-import matplotlib.pyplot as plt
-#make figures bigger on HiDPI monitors
-import matplotlib as mpl
-mpl.rcParams['figure.dpi'] = 200
+from utils.Plotting import plot_field_2d, plot_convergence_dem
+
 np.random.seed(42)
 tf.random.set_seed(42)
 
@@ -239,3 +238,6 @@ plot_field_2d(XTest, stress_xy_comp, numPtsUTest, numPtsVTest, title="Computed s
 plot_field_2d(XTest, stress_xx_err, numPtsUTest, numPtsVTest, title="Error for sigma_xx")
 plot_field_2d(XTest, stress_yy_err, numPtsUTest, numPtsVTest, title="Error for sigma_yy")
 plot_field_2d(XTest, stress_xy_err, numPtsUTest, numPtsVTest, title="Error for sigma_xy")
+
+# plot the loss convergence
+plot_convergence_dem(pred_model.adam_loss_hist, loss_func.history, percentile=95.)

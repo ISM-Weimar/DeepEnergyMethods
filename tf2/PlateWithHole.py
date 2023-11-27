@@ -24,17 +24,16 @@ For this example:
 import tensorflow as tf
 import numpy as np
 import time
-from utils.tfp_loss import tfp_function_factory
 import scipy.optimize
+import tensorflow_probability as tfp
+
 from utils.scipy_loss import scipy_function_factory
 from utils.Geom_examples import PlateWHole
 from utils.Solvers import Elasticity2D_coll_dist
 from utils.Plotting import plot_pts
-from utils.Plotting import plot_field_2d
-import tensorflow_probability as tfp
-#make figures bigger on HiDPI monitors
-import matplotlib as mpl
-mpl.rcParams['figure.dpi'] = 200
+from utils.Plotting import plot_field_2d, plot_convergence_semilog
+from utils.tfp_loss import tfp_function_factory
+
 np.random.seed(42)
 tf.random.set_seed(42)
 
@@ -305,3 +304,6 @@ plot_field_2d(XTest, stress_xy_comp, numPtsUTest, numPtsVTest, title="Computed s
 plot_field_2d(XTest, stress_xx_err, numPtsUTest, numPtsVTest, title="Error for sigma_xx")
 plot_field_2d(XTest, stress_yy_err, numPtsUTest, numPtsVTest, title="Error for sigma_yy")
 plot_field_2d(XTest, stress_xy_err, numPtsUTest, numPtsVTest, title="Error for sigma_xy")
+
+# plot the loss convergence
+plot_convergence_semilog(pred_model.adam_loss_hist, loss_func.history)

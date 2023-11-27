@@ -8,13 +8,13 @@ Mixed PINN
 import tensorflow as tf
 import numpy as np
 import time
-from utils.tfp_loss import tfp_function_factory
 import tensorflow_probability as tfp
 import matplotlib.pyplot as plt
-#make figures bigger on HiDPI monitors
-import matplotlib as mpl
-mpl.rcParams['figure.dpi'] = 200
-#tf.random.set_seed(42)
+
+from utils.tfp_loss import tfp_function_factory
+from utils.Plotting import plot_convergence_semilog
+
+tf.random.set_seed(42)
 
 class model(tf.keras.Model): 
     def __init__(self, layers, train_op, num_epoch, print_epoch):
@@ -23,6 +23,7 @@ class model(tf.keras.Model):
         self.train_op = train_op
         self.num_epoch = num_epoch
         self.print_epoch = print_epoch
+        self.adam_loss_hist = []
             
     def call(self, X):
         u_val, du_val = self.u(X)
@@ -77,6 +78,7 @@ class model(tf.keras.Model):
         for i in range(self.num_epoch):
             L, g = self.get_grad(Xint, Yint, Xbnd, Ybnd)
             self.train_op.apply_gradients(zip(g, self.trainable_variables))
+            self.adam_loss_hist.append(L)
             if i%self.print_epoch==0:
                 int_loss, bnd_loss_dir, deriv_loss = self.get_all_losses(Xint, Yint, Xbnd, Ybnd)
                 L = int_loss + bnd_loss_dir
@@ -127,8 +129,6 @@ Xint_tf = tf.convert_to_tensor(Xint[1:-1])
 Yint_tf = tf.convert_to_tensor(Yint[1:-1])
 Xbnd_tf = tf.convert_to_tensor(Xbnd)
 Ybnd_tf = tf.convert_to_tensor(Ybnd)
-
-   
 
 #training
 print("Training (ADAM)...")
@@ -191,3 +191,6 @@ plt.plot(x_test, err_deriv)
 plt.title("Error for first derivative")
 plt.show
 print("Relative error for first derivative: {}".format(np.linalg.norm(err_deriv)/np.linalg.norm(dy_exact)))
+
+# plot the loss convergence
+plot_convergence_semilog(pred_model.adam_loss_hist, loss_func.history)

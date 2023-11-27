@@ -28,15 +28,14 @@ Use Deep Energy Method
 import tensorflow as tf
 import numpy as np
 import time
+import tensorflow_probability as tfp
+import matplotlib.pyplot as plt
+
 from utils.tfp_loss import tfp_function_factory
 from utils.Geom_examples import Quadrilateral
 from utils.Solvers import Elasticity2D_DEM_dist
-from utils.Plotting import plot_pts
-import tensorflow_probability as tfp
-import matplotlib.pyplot as plt
-#make figures bigger on HiDPI monitors
-import matplotlib as mpl
-mpl.rcParams['figure.dpi'] = 200
+from utils.Plotting import plot_pts, plot_convergence_dem
+
 np.random.seed(42)
 tf.random.set_seed(42)
 
@@ -85,7 +84,7 @@ numElemV = 10
 numGauss = 4
 #xPhys, yPhys = myQuad.getRandomIntPts(numPtsU*numPtsV)
 xPhys, yPhys, Wint = geomDomain.getQuadIntPts(numElemU, numElemV, numGauss)
-data_type = "float32"
+data_type = "float64"
 
 Xint = np.concatenate((xPhys,yPhys),axis=1).astype(data_type)
 Wint = np.array(Wint).astype(data_type)
@@ -147,7 +146,7 @@ init_params = tf.dynamic_stitch(loss_func.idx, pred_model.trainable_variables)
 # train the model with L-BFGS solver
 results = tfp.optimizer.bfgs_minimize(
     value_and_gradients_function=loss_func, initial_position=init_params,
-          max_iterations=10000, tolerance=1e-14)
+          max_iterations=1000, tolerance=1e-14)
 # after training, the final optimized parameters are still in results.position
 # so we have to manually put them back to the model
 loss_func.assign_new_model_parameters(results.position)
@@ -228,3 +227,5 @@ plt.title("Error for y-displacement")
 plt.axis('equal')
 plt.show()           
    
+# plot the loss convergence
+plot_convergence_dem(pred_model.adam_loss_hist, loss_func.history, percentile=95.)

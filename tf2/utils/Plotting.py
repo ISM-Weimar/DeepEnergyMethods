@@ -101,3 +101,65 @@ def plot_field_2d(Xpts, Ypts, numPtsU, numPtsV, title=""):
     plt.title(title)
     plt.show()
     
+def plot_convergence_semilog(adam_loss_hist, bfgs_loss_hist):
+    '''
+    Plots the convergence of the loss function for the collocation method. The 
+    plot uses log scale for the y-axis.
+
+    Parameters
+    ----------
+    adam_loss_hist : (list of floats)
+        the loss at each iteration of the Adam optimizer
+    bfgs_loss_hist : (list of floats)
+        the loss at each iteration of the BFGS optimizer
+
+    Returns
+    -------
+    None.
+
+    '''
+    num_epoch = len(adam_loss_hist)
+    num_iter_bfgs = len(bfgs_loss_hist)
+    plt.semilogy(range(num_epoch), adam_loss_hist, label='Adam')
+    plt.semilogy(range(num_epoch, num_epoch+num_iter_bfgs), bfgs_loss_hist, 
+                 label = 'BFGS')
+    plt.legend()
+    plt.title('Loss convergence')
+    plt.show()
+    
+def plot_convergence_dem(adam_loss_hist, bfgs_loss_hist, percentile=99., 
+                         folder = None, file = None):
+    '''
+    Plots the convergence of the loss function for the Deep Energy Method. The
+    values higher than the "percentile" parameter are ignored.
+
+    Parameters
+    ----------
+    adam_loss_hist : (list of floats)
+        the loss at each iteration of the Adam optimizer
+    bfgs_loss_hist : (list of floats)
+        the loss at each iteration of the BFGS optimizer
+    percentile : (float)
+        . The default is 99.
+
+    Returns
+    -------
+    None.
+
+    '''
+    num_epoch = len(adam_loss_hist)
+    num_iter_bfgs = len(bfgs_loss_hist)
+    loss_hist_all = adam_loss_hist + bfgs_loss_hist
+    y_max = np.percentile(loss_hist_all, percentile)
+    y_min = np.min(loss_hist_all)
+    plt.ylim(y_min, y_max)
+    plt.plot(range(num_epoch), np.minimum(adam_loss_hist, y_max) , label='Adam')
+    plt.plot(range(num_epoch, num_epoch+num_iter_bfgs), np.minimum(bfgs_loss_hist, y_max), 
+                 label = 'BFGS')
+    plt.legend()
+    plt.title('Loss convergence')
+    if folder != None:
+        full_name = folder + '/' + file
+        plt.savefig(full_name)
+    plt.show()
+

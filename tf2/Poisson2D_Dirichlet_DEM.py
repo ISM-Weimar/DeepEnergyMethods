@@ -13,14 +13,14 @@ Implement Deep Energy Method
 import tensorflow as tf
 import numpy as np
 import time
+import tensorflow_probability as tfp
+import matplotlib.pyplot as plt
+
 from utils.tfp_loss import tfp_function_factory
 from utils.Geom_examples import Quadrilateral
 from utils.Solvers import Poisson2D_DEM
-import tensorflow_probability as tfp
-import matplotlib.pyplot as plt
-#make figures bigger on HiDPI monitors
-import matplotlib as mpl
-mpl.rcParams['figure.dpi'] = 200
+from utils.Plotting import plot_convergence_dem
+
 tf.random.set_seed(42)
 
     
@@ -161,7 +161,8 @@ rel_h1_err = np.sqrt(h1_err/h1_norm)
 print("Relative L2-error norm (integration): ", rel_l2_err)
 print("Relative H1-error norm (integration): ", rel_h1_err)
 
-
+# plot the loss convergence
+plot_convergence_dem(pred_model.adam_loss_hist, loss_func.history, percentile=95.)
 
 
    

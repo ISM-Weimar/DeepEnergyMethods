@@ -27,14 +27,15 @@ For this example:
 import tensorflow as tf
 import numpy as np
 import time
-from utils.tfp_loss import tfp_function_factory
+import tensorflow_probability as tfp
+import matplotlib.pyplot as plt
 import scipy.optimize
+
+from utils.tfp_loss import tfp_function_factory
 from utils.scipy_loss import scipy_function_factory
 from utils.Geom_examples import Quadrilateral
 from utils.Solvers import Elasticity2D_coll_dist
-from utils.Plotting import plot_pts
-import tensorflow_probability as tfp
-import matplotlib.pyplot as plt
+from utils.Plotting import plot_pts, plot_convergence_semilog
 #make figures bigger on HiDPI monitors
 import matplotlib as mpl
 mpl.rcParams['figure.dpi'] = 200
@@ -260,4 +261,6 @@ plt.colorbar()
 plt.title("Error for y-displacement")
 plt.axis('equal')
 plt.show()           
-   
+
+# plot the loss convergence
+plot_convergence_semilog(pred_model.adam_loss_hist, loss_func.history)

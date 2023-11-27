@@ -5,5 +5,5 @@ Companion paper: https://arxiv.org/abs/1908.10407 or https://doi.org/10.1016/j.c
 
 Folder tf1 contains the original Tensorflow 1 codes (works with Tensorflow versions up to 1.15).
 
-Folder tf2 contains some examples which are converted to run on Tensorflow 2 (tested with version 2.3).
+Folder tf2 contains some examples which are converted to run on Tensorflow 2 (tested with version 2.11).
 

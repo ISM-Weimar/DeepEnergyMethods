@@ -31,7 +31,7 @@ def tfp_function_factory(model, *args):
     part = [] # partition indices
 
     for i, shape in enumerate(shapes):
-        n = np.product(shape)
+        n = np.prod(shape)
         idx.append(tf.reshape(tf.range(count, count+n, dtype=tf.int32), shape))
         part.extend([i]*n)
         count += n
@@ -70,7 +70,8 @@ def tfp_function_factory(model, *args):
         f.iter.assign_add(1)
         if f.iter%model.print_epoch == 0:
             tf.print("Iter:", f.iter, "loss:", loss_value)
-
+        # store loss value so we can retrieve later
+        tf.py_function(f.history.append, inp=[loss_value], Tout=[])
         return loss_value, grads
 
     # store these information as members so we can use them outside the scope
@@ -79,5 +80,6 @@ def tfp_function_factory(model, *args):
     f.part = part
     f.shapes = shapes
     f.assign_new_model_parameters = assign_new_model_parameters
+    f.history = []
 
     return f

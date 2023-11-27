@@ -18,14 +18,14 @@ with Neumann and Robin boundary conditions
 import tensorflow as tf
 import numpy as np
 import time
+import tensorflow_probability as tfp
+import matplotlib.pyplot as plt
+
 from utils.tfp_loss import tfp_function_factory
 from utils.Geom_examples import Quadrilateral
 from utils.Solvers import Helmholtz2D_coll
-import tensorflow_probability as tfp
-import matplotlib.pyplot as plt
-#make figures bigger on HiDPI monitors
-import matplotlib as mpl
-mpl.rcParams['figure.dpi'] = 200
+from utils.Plotting import plot_convergence_semilog
+
 tf.random.set_seed(42)
  
 #define model parameters
@@ -207,4 +207,6 @@ err_imag = YExact_imag - YTest_imag
 print("L2-error norm (real): {}".format(np.linalg.norm(err_real)/np.linalg.norm(YTest_real)))
 print("L2-error norm (imag): {}".format(np.linalg.norm(err_imag)/np.linalg.norm(YTest_imag)))
 
+# plot the loss convergence
+plot_convergence_semilog(pred_model.adam_loss_hist, loss_func.history)
    
